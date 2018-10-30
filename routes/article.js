@@ -19,17 +19,51 @@ route.post("/", auth.required, async (req, res) => {
       userId: user.id
     });
     newArticle.slug = newArticle.slugify();
-    newArticle.author = {
-      username: user.username,
-      bio: user.bio,
-      image: user.image
-    };
+
     newArticle.save();
     res.status(201).json({
-      article: newArticle
+      article: {
+        title: newArticle.title,
+        description: newArticle.description,
+        body: newArticle.body,
+        userId: user.id,
+        updatedAt: newArticle.updatedAt,
+        createdAt: newArticle.createdAt,
+        slug: newArticle.slug,
+        author: {
+          username: user.username,
+          bio: user.bio,
+          image: user.image
+        }
+      }
     });
   } catch (e) {
     res.status(400).send("Error");
   }
 });
+
+//GET THE ARTICLES
+// route.get("/", async (req, res) => {
+//   const limit = 20;
+//   const offset = 0;
+//   const author = await Article.author.findAll({
+//     where: {
+//       username: req.query.author
+//     }
+//   });
+//   console.log(author.username);
+//   for (let key of Object.keys(req.query)) {
+//     switch (key) {
+//       case "limit":
+//         limit = parseInt(req.query.limit);
+//         break;
+//       case "offset":
+//         offset = parseInt(req.query.offset);
+//         break;
+//       case "author":
+//         const username = author.username;
+//         break;
+//     }
+//   }
+// });
 module.exports = route;
