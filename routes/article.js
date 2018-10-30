@@ -2,7 +2,8 @@ const { Router } = require("express");
 const { Article, User } = require("../db/index");
 const auth = require("./auth");
 const route = Router();
-
+const { Sequelize } = require("sequelize");
+const Op = Sequelize.Op;
 //POST /api/articles
 
 route.post("/", auth.required, async (req, res) => {
@@ -19,51 +20,85 @@ route.post("/", auth.required, async (req, res) => {
       userId: user.id
     });
     newArticle.slug = newArticle.slugify();
-
-    newArticle.save();
-    res.status(201).json({
-      article: {
-        title: newArticle.title,
-        description: newArticle.description,
-        body: newArticle.body,
-        userId: user.id,
-        updatedAt: newArticle.updatedAt,
-        createdAt: newArticle.createdAt,
-        slug: newArticle.slug,
-        author: {
-          username: user.username,
-          bio: user.bio,
-          image: user.image
+    await newArticle.save();
+    const newArticl = await Article.findOne({
+      where: {
+        slug: newArticle.slug
+      },
+      include: [
+        {
+          model: User,
+          attributes: ["username", "bio", "image"]
         }
-      }
+      ]
+    });
+    res.status(201).json({
+      article: newArticl.toJson()
     });
   } catch (e) {
     res.status(400).send("Error");
   }
 });
+//GET THE ARTICLE USING SLUG
+route.get("/:slug", async (req, res) => {
+  const article = await Article.findOne({
+    where: {
+      slug: req.params.slug
+    },
+    include: [
+      {
+        model: User,
+        attributes: ["username", "bio", "image"]
+      }
+    ]
+  });
+  res.json({ article: article.toJson() });
+});
 
 //GET THE ARTICLES
-// route.get("/", async (req, res) => {
-//   const limit = 20;
-//   const offset = 0;
-//   const author = await Article.author.findAll({
-//     where: {
-//       username: req.query.author
-//     }
-//   });
-//   console.log(author.username);
-//   for (let key of Object.keys(req.query)) {
-//     switch (key) {
-//       case "limit":
-//         limit = parseInt(req.query.limit);
-//         break;
-//       case "offset":
-//         offset = parseInt(req.query.offset);
-//         break;
-//       case "author":
-//         const username = author.username;
-//         break;
-//     }
-//   }
-// });
+route.get("/", async (req, res) => {
+  let limit = 20;
+  let offset = 0;
+  let whereClause = [];
+  for (let key of Object.keys(req.query)) {
+    switch (key) {
+      case "limit":
+        limit = parseInt(req.query.limit);
+        break;
+      case "offset":
+        offset = parseInt(req.query.offset);
+        break;
+      case "author":
+        const author = await User.findOne({
+          where: {
+            username: req.query.author
+          }
+        });
+        if (!author) {
+          res.status(401).send("Articles not found");
+        }
+        whereClause.push({
+          userId: author.id
+        });
+        break;
+    }
+  }
+  const articles = await Article.findAll({
+    where: {
+      [Op.and]: whereClause
+    },
+    include: [User],
+    order: [["createdAt", "DESC"]],
+    limit: limit,
+    offset: offset
+  });
+  let allArticles = [];
+  for (let article of articles) {
+    allArticles.push(article.toJson());
+  }
+  res.status(201).json({
+    articles: allArticles,
+    articlesCount: allArticles.length
+  });
+});
 module.exports = route;

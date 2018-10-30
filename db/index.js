@@ -39,6 +39,23 @@ Article.prototype.slugify = function() {
     ((Math.random() * Math.pow(36, 6)) | 0).toString(36);
   return this.slug;
 };
+
+Article.prototype.toJson = function() {
+  return {
+    title: this.title,
+    description: this.description,
+    body: this.body,
+    userId: this.id,
+    updatedAt: this.updatedAt,
+    createdAt: this.createdAt,
+    slug: this.slug,
+    author: {
+      username: this.user.username,
+      bio: this.user.bio,
+      image: this.user.image
+    }
+  };
+};
 Product.belongsTo(Vendor);
 Vendor.hasMany(Product);
 

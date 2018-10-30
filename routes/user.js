@@ -94,7 +94,7 @@ route.get("/profile/:username", auth.optional, async (req, res) => {
   console.log(user);
   if (user.image == null) {
     user.image = "https://static.productionready.io/images/smiley-cyrus.jpg";
-    user.save();
+    await user.save();
   }
   res.status(201).json({
     profile: {
