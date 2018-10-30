@@ -1,8 +1,9 @@
 const Sequelize = require("sequelize");
-const { vendor, product, user } = require("./models");
+const { vendor, product, user, article } = require("./models");
 var jwt = require("jsonwebtoken");
 const secret = "Hello this is my jwtToken";
 var bcrypt = require("bcryptjs");
+var slug = require("slug");
 
 const db = new Sequelize({
   dialect: "sqlite",
@@ -12,6 +13,8 @@ const db = new Sequelize({
 const Vendor = db.define("vendor", vendor);
 const Product = db.define("product", product);
 const User = db.define("user", user);
+const Article = db.define("article", article);
+
 User.prototype.generateToken = function() {
   return jwt.sign(
     {
@@ -29,13 +32,23 @@ User.prototype.validpassword = function(pass) {
   }
   return false;
 };
-
+Article.prototype.slugify = function() {
+  this.slug =
+    slug(this.title) +
+    "-" +
+    ((Math.random() * Math.pow(36, 6)) | 0).toString(36);
+  return this.slug;
+};
 Product.belongsTo(Vendor);
 Vendor.hasMany(Product);
+
+Article.belongsTo(User);
+User.hasMany(Article);
 
 module.exports = {
   db,
   Vendor,
   Product,
-  User
+  User,
+  Article
 };

@@ -1,7 +1,7 @@
 const { Router } = require("express");
 const { User } = require("../db/index");
 var bcrypt = require("bcryptjs");
-var { auth, getTokenFromHeader } = require("./auth");
+var auth = require("./auth");
 
 const route = Router();
 
@@ -10,7 +10,7 @@ route.get("/user", auth.required, async (req, res) => {
   const user = await User.findByPk(req.payload.id);
   if (user) {
     //console.log(user);
-    user.token = getTokenFromHeader(req);
+    //user.token = getTokenFromHeader(req);
     res.status(200).json({ user: user });
   } else {
     res.status(401);
@@ -31,6 +31,7 @@ route.post("/users/login", async (req, res) => {
       res.status(422).json({ errors: { "email or password": "is invalid" } });
     } else {
       user.token = user.generateToken();
+      user.save();
       res.status(201).json({ user: user });
     }
   }
@@ -48,6 +49,7 @@ route.post("/users", async (req, res) => {
     });
 
     newUser.token = newUser.generateToken();
+    newUser.save();
     res.status(201).json({
       user: newUser
     });
@@ -82,8 +84,25 @@ route.put("/user", auth.required, async (req, res, next) => {
   }
   await user.save();
   console.log(user);
-  user.token = getTokenFromHeader(req);
+  //user.token = getTokenFromHeader(req);
   return res.status(201).json({ user: user });
+});
+
+//GET / api / profiles /: username
+route.get("/profile/:username", auth.optional, async (req, res) => {
+  const user = await User.findOne({ where: { username: req.params.username } });
+  console.log(user);
+  if (user.image == null) {
+    user.image = "https://static.productionready.io/images/smiley-cyrus.jpg";
+    user.save();
+  }
+  res.status(201).json({
+    profile: {
+      username: user.username,
+      bio: user.bio,
+      image: user.image
+    }
+  });
 });
 
 module.exports = route;

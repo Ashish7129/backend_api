@@ -12,7 +12,7 @@ module.exports = {
 
   product: {
     name: {
-      type: DT.STRING(100),
+      type: DT.JSON,
       allowNull: false
     },
     price: {
@@ -53,6 +53,24 @@ module.exports = {
     image: {
       type: DT.STRING(100),
       defaultValue: null
+    }
+  },
+
+  article: {
+    slug: {
+      type: DT.STRING(100)
+    },
+    title: {
+      type: DT.STRING(100)
+    },
+    description: {
+      type: DT.STRING(200)
+    },
+    body: {
+      type: DT.STRING(1000)
+    },
+    author: {
+      type: DT.JSON
     }
   }
 };

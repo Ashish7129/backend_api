@@ -29,4 +29,4 @@ var auth = {
   })
 };
 
-module.exports = { auth, getTokenFromHeader };
+module.exports = auth;  
