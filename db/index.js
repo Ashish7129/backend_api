@@ -89,5 +89,6 @@ module.exports = {
   Vendor,
   Product,
   User,
-  Article
+  Article,
+  Comment
 };

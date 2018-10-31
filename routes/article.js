@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { Article, User } = require("../db/index");
+const { Article, User, Comment } = require("../db/index");
 const auth = require("./auth");
 const route = Router();
 const { Sequelize } = require("sequelize");
@@ -107,11 +107,141 @@ route.put("/:slug", auth.required, async (req, res) => {
   const article = await Article.findOne({
     where: {
       slug: req.params.slug,
-      userId:req.payload.id
+      userId: req.payload.id
+    },
+    include: [
+      {
+        model: User,
+        attributes: ["username", "bio", "image"]
+      }
+    ]
+  });
+  if (!article) {
+    res.status(404).send("Article Not Found");
+  }
+  if (typeof req.body.article.title !== undefined) {
+    article.title = req.body.article.title;
+    article.slug = article.slugify();
+  }
+  if (typeof req.body.article.body !== undefined) {
+    article.body = req.body.article.body;
+  }
+  if (typeof req.body.article.description !== undefined) {
+    article.description = req.body.article.description;
+  }
+  await article.save();
+  res.json({ article: article.toJson() });
+});
+
+//DELETE /api/articles/:slug
+route.delete("/:slug", auth.required, async (req, res) => {
+  const article = await Article.findOne({
+    where: {
+      slug: req.params.slug,
+      userId: req.payload.id
     }
   });
-  article.
+  if (!article) {
+    res.status(404).send("Article Not Found");
+  }
+  await article.destroy();
+  res.status(201).send("Deleted");
 });
-//DELETE /api/articles/:slug
-route.delete("/:slug", auth.required, async (req, res) => {});
+
+//POST /api/articles/:slug/comments(Auth required)
+route.post("/:slug/comments", auth.required, async (req, res) => {
+  const article = await Article.findOne({
+    where: {
+      slug: req.params.slug
+    }
+  });
+  if (!article) {
+    return res.sendStatus(404).send("Not Found");
+  }
+  try {
+    const comment = await Comment.create({
+      body: req.body.comment.body,
+      articleId: article.id,
+      userId: req.payload.id
+    });
+    await comment.save();
+    const newComment = await Comment.findOne({
+      where: {
+        id: comment.id
+      },
+      include: [
+        {
+          model: User,
+          attributes: ["username", "bio", "image"]
+        }
+      ]
+    });
+    res.status(201).json({
+      comment: newComment.toJson()
+    });
+  } catch (e) {
+    res.status(400).send("Error");
+  }
+});
+//GET / api / articles /: slug / comments (Auth optional)
+
+route.get("/:slug/comments", auth.optional, async (req, res) => {
+  const article = await Article.findOne({
+    where: {
+      slug: req.params.slug
+    }
+  });
+  if (!article) {
+    res.status(404).send("Article Not Found");
+  }
+  try {
+    const comments = await Comment.findAll({
+      where: {
+        userId: article.userId
+      },
+      include: [
+        {
+          model: User,
+          attributes: ["username", "bio", "image"]
+        }
+      ]
+    });
+    console.log(comments);
+    if (!comments) {
+      res.status(404).send("Comments Not Found");
+    }
+    let allComments = [];
+    for (let comment of comments) {
+      allComments.push(comment.toJson());
+    }
+
+    res.status(201).json({
+      comments: allComments
+    });
+  } catch (e) {
+    res.status(400).send("Error");
+  }
+});
+
+//DELETE / api / articles /: slug / comments /: id (Auth required)
+
+route.delete("/:slug/comments/:id", auth.required, async (req, res) => {
+  const article = await Article.findOne({ where: { slug: req.params.slug } });
+  if (!article) {
+    res.status(404).send("Article Not Found");
+  }
+  const comment = await Comment.findOne({
+    where: {
+      userId: req.payload.id,
+      articleId: article.id,
+      id: req.params.id
+    }
+  });
+  if (!comment) {
+    res.status(404).send("Comment Not Found");
+  }
+  await comment.destroy();
+  res.status(201).send("Deleted");
+});
+
 module.exports = route;
