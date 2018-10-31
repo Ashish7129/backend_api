@@ -4,8 +4,8 @@ const auth = require("./auth");
 const route = Router();
 const { Sequelize } = require("sequelize");
 const Op = Sequelize.Op;
-//POST /api/articles
 
+//POST /api/articles
 route.post("/", auth.required, async (req, res) => {
   const user = await User.findOne({ where: { id: req.payload.id } });
   console.log(user.id);
@@ -101,4 +101,17 @@ route.get("/", async (req, res) => {
     articlesCount: allArticles.length
   });
 });
+
+//PUT / api / articles /: slug
+route.put("/:slug", auth.required, async (req, res) => {
+  const article = await Article.findOne({
+    where: {
+      slug: req.params.slug,
+      userId:req.payload.id
+    }
+  });
+  article.
+});
+//DELETE /api/articles/:slug
+route.delete("/:slug", auth.required, async (req, res) => {});
 module.exports = route;

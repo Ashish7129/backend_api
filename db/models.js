@@ -64,10 +64,16 @@ module.exports = {
       type: DT.STRING(100)
     },
     description: {
-      type: DT.STRING(200)
+      type: DT.TEXT
     },
     body: {
       type: DT.STRING(1000)
-    },
+    }
+  },
+
+  comment: {
+    body: {
+      type: DT.TEXT
+    }
   }
 };
