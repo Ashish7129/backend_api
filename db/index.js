@@ -1,5 +1,5 @@
 const Sequelize = require("sequelize");
-const { vendor, product, user, article, comment } = require("./models");
+const { vendor, product, user, article, comment, tags } = require("./models");
 var jwt = require("jsonwebtoken");
 const secret = "Hello this is my jwtToken";
 var bcrypt = require("bcryptjs");
@@ -15,6 +15,7 @@ const Product = db.define("product", product);
 const User = db.define("user", user);
 const Article = db.define("article", article);
 const Comment = db.define("comment", comment);
+const Tags = db.define("tags", tags);
 
 User.prototype.generateToken = function() {
   return jwt.sign(
@@ -46,7 +47,8 @@ Article.prototype.toJson = function() {
     title: this.title,
     description: this.description,
     body: this.body,
-    userId: this.id,
+    userId: this.user.id,
+    tagList: this.tagList ? this.tagList.split(",") : null,
     updatedAt: this.updatedAt,
     createdAt: this.createdAt,
     slug: this.slug,
@@ -78,6 +80,11 @@ Vendor.hasMany(Product);
 Article.belongsTo(User);
 User.hasMany(Article);
 
+Tags.belongsToMany(Article, { through: "ArticleTags" });
+Article.belongsToMany(Tags, {
+  through: "TagsArticle"
+});
+Article.hasMany(Tags);
 Comment.belongsTo(User);
 User.hasMany(Comment);
 
@@ -90,5 +97,6 @@ module.exports = {
   Product,
   User,
   Article,
-  Comment
+  Comment,
+  Tags
 };

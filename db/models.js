@@ -67,12 +67,22 @@ module.exports = {
       type: DT.TEXT
     },
     body: {
-      type: DT.STRING(1000)
+      type: DT.TEXT
+    },
+    tagList: {
+      type: DT.STRING(1000),
+      defaultValue: null
     }
   },
 
   comment: {
     body: {
+      type: DT.TEXT
+    }
+  },
+
+  tags: {
+    tagname: {
       type: DT.TEXT
     }
   }
