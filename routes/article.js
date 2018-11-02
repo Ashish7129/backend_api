@@ -8,11 +8,11 @@ const Op = Sequelize.Op;
 //POST /api/articles
 route.post("/", auth.required, async (req, res) => {
   const user = await User.findOne({ where: { id: req.payload.id } });
-  let tags;
+  var tags = null;
   if (typeof req.body.article.tagList !== "undefined") {
-    tags = req.body.article.tagList.toString();
-  } else {
-    tags = null;
+    if (req.body.article.tagList != null) {
+      tags = req.body.article.tagList.toString();
+    }
   }
   console.log(user.id);
   if (!user) {
@@ -30,14 +30,16 @@ route.post("/", auth.required, async (req, res) => {
   //console.log(newArticle);
   await newArticle.save();
   if (typeof req.body.article.tagList !== "undefined") {
-    req.body.article.tagList.forEach(tag => {
-      if (tag != "") {
-        const createTag = Tags.create({
-          tagname: tag,
-          articleId: newArticle.id
-        });
-      }
-    });
+    if (req.body.article.tagList != null) {
+      req.body.article.tagList.forEach(tag => {
+        if (tag != "") {
+          const createTag = Tags.create({
+            tagname: tag,
+            articleId: newArticle.id
+          });
+        }
+      });
+    }
   }
   const newArticl = await Article.findOne({
     where: {
@@ -204,7 +206,7 @@ route.put("/:slug", auth.required, async (req, res) => {
   if (typeof req.body.article.description !== "undefined") {
     article.description = req.body.article.description;
   }
-  if (typeof req.body.article.tagsList !== "undefined") {
+  if (typeof req.body.article.tagList !== "undefined") {
     req.body.article.tagList.forEach(tag => {
       if (tag != "") {
         Tags.findAll({
@@ -221,10 +223,13 @@ route.put("/:slug", auth.required, async (req, res) => {
             });
           }
         });
+      } else {
+        req.body.article.tagList.pop(tag);
       }
     });
     article.tagList = req.body.article.tagList.toString();
     console.log(article.tagList);
+    //Article.addtags(article.taglist);
   }
   article.save();
   res.json({ article: article.toJson() });
@@ -238,23 +243,24 @@ route.delete("/:slug", auth.required, async (req, res) => {
       userId: req.payload.id
     }
   });
-  const tags = article.tagList.split(",");
+  const tags = article.tagList != null ? article.tagList.split(",") : null;
   console.log(tags);
-  tags.forEach(element => {
-    Tags.destroy({
-      where: {
-        tagname: element,
-        articleId: article.id
-      }
-    }).then(function (deletedRecord) {
-      if (deletedRecord === 1) {
-        res.status(200).json({ message: "Deleted successfully" });
-      }
-      else {
-        res.status(404).json({ message: "record not found" })
-      }
+  if (tags != null) {
+    tags.forEach(element => {
+      Tags.destroy({
+        where: {
+          tagname: element,
+          articleId: article.id
+        }
+      }).then(function(deletedRecord) {
+        if (deletedRecord === 1) {
+          res.status(200).json({ message: "Deleted successfully" });
+        } else {
+          res.status(404).json({ message: "record not found" });
+        }
+      });
     });
-  });
+  }
   if (!article) {
     res.status(404).send("Article Not Found");
   }

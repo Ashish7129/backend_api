@@ -48,7 +48,7 @@ Article.prototype.toJson = function() {
     description: this.description,
     body: this.body,
     userId: this.user.id,
-    tagList: this.tagList ? this.tagList.split(",") : null,
+    tagList: this.tagList != null ? this.tagList.split(",") : null,
     updatedAt: this.updatedAt,
     createdAt: this.createdAt,
     slug: this.slug,

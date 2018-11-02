@@ -2,7 +2,8 @@ const { Router } = require("express");
 const { User } = require("../db/index");
 var bcrypt = require("bcryptjs");
 var auth = require("./auth");
-
+const { Sequelize } = require("sequelize");
+const Op = Sequelize.Op;
 const route = Router();
 
 //GET CURRENT USER
@@ -40,6 +41,20 @@ route.post("/users/login", async (req, res) => {
 //CREATE THE NEW USER
 route.post("/users", async (req, res) => {
   // ideally use try catch here too
+  const Check = await User.findOne({
+    where: {
+      [Op.or]: {
+        email: req.body.user.email,
+        username: req.body.user.username
+      }
+    }
+  });
+  if (Check) {
+    res
+      .status(422)
+      .json({ errors: { "email or username": "is already taken" } });
+  }
+
   try {
     var hashedPassword = bcrypt.hashSync(req.body.user.password, 8);
     const newUser = await User.create({
