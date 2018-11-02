@@ -85,6 +85,7 @@ Article.belongsToMany(Tags, {
   through: "TagsArticle"
 });
 Article.hasMany(Tags);
+
 Comment.belongsTo(User);
 User.hasMany(Comment);
 

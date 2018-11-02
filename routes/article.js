@@ -31,10 +31,12 @@ route.post("/", auth.required, async (req, res) => {
   await newArticle.save();
   if (typeof req.body.article.tagList !== "undefined") {
     req.body.article.tagList.forEach(tag => {
-      const createTag = Tags.create({
-        tagname: tag,
-        articleId: newArticle.id
-      });
+      if (tag != "") {
+        const createTag = Tags.create({
+          tagname: tag,
+          articleId: newArticle.id
+        });
+      }
     });
   }
   const newArticl = await Article.findOne({
@@ -55,6 +57,7 @@ route.post("/", auth.required, async (req, res) => {
   //   res.status(400).send("Error");
   // }
 });
+
 //GET THE ARTICLE USING SLUG
 route.get("/:slug", async (req, res) => {
   const article = await Article.findOne({
@@ -133,8 +136,10 @@ route.get("/", async (req, res) => {
               tagname: req.query.tag
             },
             attributes: [
-                [Sequelize.fn("DISTINCT", Sequelize.col("articleId")),
-                "articleId"]
+              [
+                Sequelize.fn("DISTINCT", Sequelize.col("articleId")),
+                "articleId"
+              ]
             ]
           });
           if (!particulartag) {
@@ -185,23 +190,43 @@ route.put("/:slug", auth.required, async (req, res) => {
       }
     ]
   });
+  console.log(article);
   if (!article) {
     res.status(404).send("Article Not Found");
   }
-  if (typeof req.body.article.title !== undefined) {
+  if (typeof req.body.article.title !== "undefined") {
     article.title = req.body.article.title;
     article.slug = article.slugify();
   }
-  if (typeof req.body.article.body !== undefined) {
+  if (typeof req.body.article.body !== "undefined") {
     article.body = req.body.article.body;
   }
-  if (typeof req.body.article.description !== undefined) {
+  if (typeof req.body.article.description !== "undefined") {
     article.description = req.body.article.description;
   }
-  if (typeof req.body.article.tagsList !== undefined) {
-    article.tagList = req.body.article.tagList;
+  if (typeof req.body.article.tagsList !== "undefined") {
+    req.body.article.tagList.forEach(tag => {
+      if (tag != "") {
+        Tags.findAll({
+          where: {
+            tagname: tag,
+            articleId: article.id
+          }
+        }).then(findtag => {
+          console.log(findtag);
+          if (findtag.length < 1) {
+            const createTag = Tags.create({
+              tagname: tag,
+              articleId: article.id
+            });
+          }
+        });
+      }
+    });
+    article.tagList = req.body.article.tagList.toString();
+    console.log(article.tagList);
   }
-  await article.save();
+  article.save();
   res.json({ article: article.toJson() });
 });
 
@@ -212,6 +237,23 @@ route.delete("/:slug", auth.required, async (req, res) => {
       slug: req.params.slug,
       userId: req.payload.id
     }
+  });
+  const tags = article.tagList.split(",");
+  console.log(tags);
+  tags.forEach(element => {
+    Tags.destroy({
+      where: {
+        tagname: element,
+        articleId: article.id
+      }
+    }).then(function (deletedRecord) {
+      if (deletedRecord === 1) {
+        res.status(200).json({ message: "Deleted successfully" });
+      }
+      else {
+        res.status(404).json({ message: "record not found" })
+      }
+    });
   });
   if (!article) {
     res.status(404).send("Article Not Found");
